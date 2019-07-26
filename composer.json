@@ -1,5 +1,5 @@
 {
-  "name": "leadvertex/plugin-process",
+  "name": "leadvertex/plugin-component-process",
   "description": "LeadVertex plugin process handler component",
   "type": "library",
   "minimum-stability": "stable",
@@ -12,17 +12,17 @@
   ],
   "autoload": {
     "psr-4": {
-      "Leadvertex\\Plugin\\Process\\": "src/"
+      "Leadvertex\\Plugin\\Components\\Process\\": "src/"
     }
   },
   "require": {
     "php": ">=7.1.0",
     "guzzlehttp/guzzle": "^6.3",
-    "leadvertex/plugin-i18n": "^0.0.3"
+    "leadvertex/plugin-component-i18n": "^0.0.4"
   },
   "autoload-dev": {
     "psr-4": {
-      "Leadvertex\\Plugin\\Process\\": "tests/"
+      "Leadvertex\\Plugin\\Components\\Process\\": "tests/"
     }
   },
   "require-dev": {

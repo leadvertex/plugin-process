@@ -5,11 +5,11 @@
  * @author Timur Kasumov aka XAKEPEHOK
  */
 
-namespace Leadvertex\Plugin\Process\Components;
+namespace Leadvertex\Plugin\Components\Process\Components;
 
 
 use InvalidArgumentException;
-use Leadvertex\Plugin\I18n\I18nInterface;
+use Leadvertex\Plugin\Components\I18n\I18nInterface;
 
 class Error
 {

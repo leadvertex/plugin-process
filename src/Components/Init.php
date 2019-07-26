@@ -5,7 +5,7 @@
  * @author Timur Kasumov aka XAKEPEHOK
  */
 
-namespace Leadvertex\Plugin\Process\Components;
+namespace Leadvertex\Plugin\Components\Process\Components;
 
 
 class Init

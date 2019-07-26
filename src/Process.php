@@ -5,16 +5,16 @@
  * @author Timur Kasumov aka XAKEPEHOK
  */
 
-namespace Leadvertex\Plugin\Process;
+namespace Leadvertex\Plugin\Components\Process;
 
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use Leadvertex\Plugin\Process\Components\Error;
-use Leadvertex\Plugin\Process\Components\Init;
-use Leadvertex\Plugin\Process\Components\Result;
-use Leadvertex\Plugin\Process\Components\Skip;
-use Leadvertex\Plugin\Process\Components\Success;
+use Leadvertex\Plugin\Components\Process\Components\Error;
+use Leadvertex\Plugin\Components\Process\Components\Init;
+use Leadvertex\Plugin\Components\Process\Components\Result;
+use Leadvertex\Plugin\Components\Process\Components\Skip;
+use Leadvertex\Plugin\Components\Process\Components\Success;
 use TypeError;
 
 class Process
