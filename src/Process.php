@@ -67,6 +67,14 @@ class Process
     }
 
     /**
+     * @return string
+     */
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    /**
      * @param Init $init
      * @throws GuzzleException
      */
@@ -145,7 +153,6 @@ class Process
         }
         return $this->client;
     }
-
 
 
 }
