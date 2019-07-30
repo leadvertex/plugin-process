@@ -120,13 +120,13 @@ class Process
     }
 
     /**
-     * @param Skip $success
+     * @param Skip $skip
      * @throws GuzzleException
      */
-    public function skip(Skip $success): void
+    public function skip(Skip $skip): void
     {
         $this->getClient()->request('post', $this->skipUrl, ['json' => [
-            'count' => $success->getCount()
+            'count' => $skip->getCount()
         ]]);
     }
 
