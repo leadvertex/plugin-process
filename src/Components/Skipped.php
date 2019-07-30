@@ -1,14 +1,14 @@
 <?php
 /**
  * Created for plugin-process
- * Datetime: 25.07.2019 12:23
+ * Datetime: 25.07.2019 12:24
  * @author Timur Kasumov aka XAKEPEHOK
  */
 
 namespace Leadvertex\Plugin\Components\Process\Components;
 
 
-class Success
+class Skipped
 {
 
     /**

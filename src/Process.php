@@ -12,9 +12,11 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Leadvertex\Plugin\Components\Process\Components\Error;
 use Leadvertex\Plugin\Components\Process\Components\Init;
-use Leadvertex\Plugin\Components\Process\Components\Result;
-use Leadvertex\Plugin\Components\Process\Components\Skip;
-use Leadvertex\Plugin\Components\Process\Components\Success;
+use Leadvertex\Plugin\Components\Process\Components\Result\ResultInterface;
+use Leadvertex\Plugin\Components\Process\Components\Skipped;
+use Leadvertex\Plugin\Components\Process\Components\Handled;
+use Leadvertex\Plugin\Components\Process\Exceptions\AlreadyInitializedException;
+use Leadvertex\Plugin\Components\Process\Exceptions\NotInitializedException;
 use TypeError;
 
 class Process
@@ -31,7 +33,7 @@ class Process
     /**
      * @var string
      */
-    private $successUrl;
+    private $handleUrl;
     /**
      * @var string
      */
@@ -48,11 +50,15 @@ class Process
      * @var Client
      */
     private $client;
+    /**
+     * @var Init
+     */
+    private $init = null;
 
     public function __construct(
         string $id,
         string $initUrl,
-        string $successUrl,
+        string $handleUrl,
         string $errorUrl,
         string $skipUrl,
         string $resultUrl
@@ -60,7 +66,7 @@ class Process
     {
         $this->id = $id;
         $this->initUrl = $initUrl;
-        $this->successUrl = $successUrl;
+        $this->handleUrl = $handleUrl;
         $this->errorUrl = $errorUrl;
         $this->skipUrl = $skipUrl;
         $this->resultUrl = $resultUrl;
@@ -76,24 +82,32 @@ class Process
 
     /**
      * @param Init $init
+     * @throws AlreadyInitializedException
      * @throws GuzzleException
      */
-    public function init(Init $init): void
+    public function initWebhook(Init $init): void
     {
+        if ($this->init !== null) {
+            throw new AlreadyInitializedException("Process '{$this->getId()}' already initialized");
+        }
+
+        $this->init = $init;
         $this->getClient()->request('post', $this->initUrl, ['json' => [
             'count' => $init->getCount()
         ]]);
     }
 
     /**
-     * @param Success $success
+     * @param Handled $handled
      * @throws GuzzleException
+     * @throws NotInitializedException
      */
-    public function success(Success $success): void
+    public function handleWebhook(Handled $handled): void
     {
-        if ($success->getCount() > 0) {
-            $this->getClient()->request('post', $this->successUrl, ['json' => [
-                'count' => $success->getCount()
+        $this->guardNotInitialized();
+        if ($handled->getCount() > 0) {
+            $this->getClient()->request('post', $this->handleUrl, ['json' => [
+                'count' => $handled->getCount()
             ]]);
         }
     }
@@ -101,9 +115,11 @@ class Process
     /**
      * @param Error[] $errors
      * @throws GuzzleException
+     * @throws NotInitializedException
      */
-    public function error(array $errors): void
+    public function errorWebhook(array $errors): void
     {
+        $this->guardNotInitialized();
         $requestErrors = [];
         foreach ($errors as $error) {
             if (!($error instanceof Error)) {
@@ -124,26 +140,31 @@ class Process
     }
 
     /**
-     * @param Skip $skip
+     * @param Skipped $skipped
      * @throws GuzzleException
+     * @throws NotInitializedException
      */
-    public function skip(Skip $skip): void
+    public function skipWebhook(Skipped $skipped): void
     {
-        if ($skip->getCount() > 0) {
+        $this->guardNotInitialized();
+        if ($skipped->getCount() > 0) {
             $this->getClient()->request('post', $this->skipUrl, ['json' => [
-                'count' => $skip->getCount()
+                'count' => $skipped->getCount()
             ]]);
         }
     }
 
     /**
-     * @param Result $result
+     * @param ResultInterface $result
      * @throws GuzzleException
+     * @throws NotInitializedException
      */
-    public function result(Result $result): void
+    public function resultWebhook(ResultInterface $result): void
     {
+        $this->guardNotInitialized();
         $this->getClient()->request('post', $this->skipUrl, ['json' => [
-            'count' => $result->get()
+            'type' => $result->getType(),
+            'value' => $result->getValue(),
         ]]);
     }
 
@@ -158,6 +179,16 @@ class Process
             ]);
         }
         return $this->client;
+    }
+
+    /**
+     * @throws NotInitializedException
+     */
+    private function guardNotInitialized()
+    {
+        if ($this->init === null) {
+            throw new NotInitializedException("Process '{$this->getId()}' not yet initialized");
+        }
     }
 
 
