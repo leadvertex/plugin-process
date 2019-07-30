@@ -91,9 +91,11 @@ class Process
      */
     public function success(Success $success): void
     {
-        $this->getClient()->request('post', $this->successUrl, ['json' => [
-            'count' => $success->getCount()
-        ]]);
+        if ($success->getCount() > 0) {
+            $this->getClient()->request('post', $this->successUrl, ['json' => [
+                'count' => $success->getCount()
+            ]]);
+        }
     }
 
     /**
@@ -114,9 +116,11 @@ class Process
             ];
         }
 
-        $this->getClient()->request('post', $this->errorUrl, ['json' => [
-            'errors' => $requestErrors
-        ]]);
+        if (count($requestErrors) > 0) {
+            $this->getClient()->request('post', $this->errorUrl, ['json' => [
+                'errors' => $requestErrors
+            ]]);
+        }
     }
 
     /**
@@ -125,9 +129,11 @@ class Process
      */
     public function skip(Skip $skip): void
     {
-        $this->getClient()->request('post', $this->skipUrl, ['json' => [
-            'count' => $skip->getCount()
-        ]]);
+        if ($skip->getCount() > 0) {
+            $this->getClient()->request('post', $this->skipUrl, ['json' => [
+                'count' => $skip->getCount()
+            ]]);
+        }
     }
 
     /**
