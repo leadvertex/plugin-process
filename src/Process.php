@@ -162,7 +162,7 @@ class Process
     public function resultWebhook(ResultInterface $result): void
     {
         $this->guardNotInitialized();
-        $this->getClient()->request('post', $this->skipUrl, ['json' => [
+        $this->getClient()->request('post', $this->resultUrl, ['json' => [
             'type' => $result->getType(),
             'value' => $result->getValue(),
         ]]);
