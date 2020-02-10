@@ -29,9 +29,9 @@ use LogicException;
 class Process extends Model implements JsonSerializable
 {
 
-    public function __construct(string $companyId, string $id = null, int $init = null)
+    public function __construct(string $id = null, int $init = null)
     {
-        parent::__construct($companyId, $id, '');
+        parent::__construct($id, '');
         $this->init = $init;
         $this->handled = 0;
         $this->skipped = 0;
