@@ -9,39 +9,36 @@ namespace Leadvertex\Plugin\Components\Process\Components;
 
 
 use InvalidArgumentException;
-use Leadvertex\Plugin\Components\I18n\I18nInterface;
 
 class Error
 {
 
-    /**
-     * @var I18nInterface
-     */
+    /** @var string */
     private $message;
-    /**
-     * @var null
-     */
+
+    /** @var string|int|null */
     private $entityId;
 
-    public function __construct(I18nInterface $message, $entityId = null)
+    public function __construct(string $message, $entityId = null)
     {
         if (!is_scalar($entityId) && !is_null($entityId)) {
             throw new InvalidArgumentException('Entity id should be scalar or null');
         }
+
         $this->message = $message;
         $this->entityId = $entityId;
     }
 
     /**
-     * @return I18nInterface
+     * @return string
      */
-    public function getMessage(): I18nInterface
+    public function getMessage(): string
     {
         return $this->message;
     }
 
     /**
-     * @return null
+     * @return string|int|null
      */
     public function getEntityId()
     {

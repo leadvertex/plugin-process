@@ -8,188 +8,136 @@
 namespace Leadvertex\Plugin\Components\Process;
 
 
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
+use DateTimeImmutable;
+use InvalidArgumentException;
+use JsonSerializable;
+use Leadvertex\Plugin\Components\Db\Model;
 use Leadvertex\Plugin\Components\Process\Components\Error;
-use Leadvertex\Plugin\Components\Process\Components\Init;
-use Leadvertex\Plugin\Components\Process\Components\Result\ResultInterface;
-use Leadvertex\Plugin\Components\Process\Components\Skipped;
-use Leadvertex\Plugin\Components\Process\Components\Handled;
-use Leadvertex\Plugin\Components\Process\Exceptions\AlreadyInitializedException;
-use Leadvertex\Plugin\Components\Process\Exceptions\NotInitializedException;
-use TypeError;
+use LogicException;
 
-class Process
+/**
+ * Class Process
+ * @package Leadvertex\Plugin\Components\Process
+ *
+ * @property int|null $init
+ * @property int $handled
+ * @property int $skipped
+ * @property int $failed
+ * @property array $errors
+ * @property bool|int|string|null $result
+ */
+class Process extends Model implements JsonSerializable
 {
 
-    /**
-     * @var string
-     */
-    private $id;
-    /**
-     * @var string
-     */
-    private $initUrl;
-    /**
-     * @var string
-     */
-    private $handleUrl;
-    /**
-     * @var string
-     */
-    private $errorUrl;
-    /**
-     * @var string
-     */
-    private $skipUrl;
-    /**
-     * @var string
-     */
-    private $resultUrl;
-    /**
-     * @var Client
-     */
-    private $client;
-    /**
-     * @var Init
-     */
-    private $init = null;
-
-    public function __construct(
-        string $id,
-        string $initUrl,
-        string $handleUrl,
-        string $errorUrl,
-        string $skipUrl,
-        string $resultUrl
-    )
+    public function __construct(string $companyId, string $id = null, int $init = null)
     {
-        $this->id = $id;
-        $this->initUrl = $initUrl;
-        $this->handleUrl = $handleUrl;
-        $this->errorUrl = $errorUrl;
-        $this->skipUrl = $skipUrl;
-        $this->resultUrl = $resultUrl;
-    }
-
-    /**
-     * @return string
-     */
-    public function getId(): string
-    {
-        return $this->id;
-    }
-
-    /**
-     * @param Init $init
-     * @throws AlreadyInitializedException
-     * @throws GuzzleException
-     */
-    public function initWebhook(Init $init): void
-    {
-        if ($this->init !== null) {
-            throw new AlreadyInitializedException("Process '{$this->getId()}' already initialized");
-        }
-
+        parent::__construct($companyId, $id, '');
         $this->init = $init;
-        $this->getClient()->request('post', $this->initUrl, ['json' => [
-            'count' => $init->getCount()
-        ]]);
+        $this->handled = 0;
+        $this->skipped = 0;
+        $this->failed = 0;
+        $this->errors = [];
+        $this->result = null;
     }
 
-    /**
-     * @param Handled $handled
-     * @throws GuzzleException
-     * @throws NotInitializedException
-     */
-    public function handleWebhook(Handled $handled): void
+    public function getHandledCount(): int
     {
-        $this->guardNotInitialized();
-        if ($handled->getCount() > 0) {
-            $this->getClient()->request('post', $this->handleUrl, ['json' => [
-                'count' => $handled->getCount()
-            ]]);
+        return $this->handled;
+    }
+
+    public function handle(): void
+    {
+        $this->handled++;
+    }
+
+    public function getSkippedCount(): int
+    {
+        return $this->skipped;
+    }
+
+    public function skip(): void
+    {
+        $this->skipped++;
+    }
+
+    public function getFailedCount(): int
+    {
+        return $this->failed;
+    }
+
+    public function getLastErrors(): array
+    {
+        return array_map(function (array $value) {
+            return new Error($value['message'], $value['entityId']);
+        }, array_reverse($this->errors));
+    }
+
+    public function addError(Error $error): void
+    {
+        $this->failed++;
+        $this->errors = array_slice($this->errors, 1, 19);
+        $this->errors[] = [
+            'message' => $error->getMessage(),
+            'entityId' => $error->getEntityId(),
+        ];
+    }
+
+    public function getResult()
+    {
+        return $this->result;
+    }
+
+    public function terminate(Error $error): void
+    {
+        $this->addError($error);
+        $this->setUpdatedAt(new DateTimeImmutable());
+        $this->result = false;
+    }
+
+    public function finish($value)
+    {
+        if (!is_bool($value) && !is_int($value) && !is_string($value)) {
+            throw new InvalidArgumentException("Finish value should be a 'bool', 'int' or 'string' type");
         }
-    }
 
-    /**
-     * @param Error[] $errors
-     * @throws GuzzleException
-     * @throws NotInitializedException
-     */
-    public function errorWebhook(array $errors): void
-    {
-        $this->guardNotInitialized();
-        $requestErrors = [];
-        foreach ($errors as $error) {
-            if (!($error instanceof Error)) {
-                throw new TypeError('Error should be instance of ' . Error::class);
+        if ($this->init > 0) {
+            $skipped = $this->init - $this->handled - $this->failed - $this->skipped;
+            if ($skipped > 0) {
+                $this->skipped+= $skipped;
             }
-
-            $requestErrors[] = [
-                'message' => $error->getMessage()->get(),
-                'entityId' => $error->getEntityId(),
-            ];
         }
 
-        if (count($requestErrors) > 0) {
-            $this->getClient()->request('post', $this->errorUrl, ['json' => [
-                'errors' => $requestErrors
-            ]]);
+        $this->setUpdatedAt(new DateTimeImmutable());
+        $this->result = $value;
+    }
+
+    public function __set($name, $value)
+    {
+        if ($this->result !== null) {
+            throw new LogicException('Process already finished and can not be changed');
         }
     }
 
     /**
-     * @param Skipped $skipped
-     * @throws GuzzleException
-     * @throws NotInitializedException
+     * @inheritDoc
      */
-    public function skipWebhook(Skipped $skipped): void
+    public function jsonSerialize()
     {
-        $this->guardNotInitialized();
-        if ($skipped->getCount() > 0) {
-            $this->getClient()->request('post', $this->skipUrl, ['json' => [
-                'count' => $skipped->getCount()
-            ]]);
-        }
+        return [
+            'init' => [
+                'timestamp' => $this->getCreatedAt()->getTimestamp(),
+                'value' => $this->init,
+            ],
+            'handled' => $this->handled,
+            'skipped' => $this->skipped,
+            'failed' => [
+                'count' => $this->failed,
+                'last' => $this->errors,
+            ],
+            'result' => [
+                'timestamp' => $this->getUpdatedAt() ? $this->getUpdatedAt()->getTimestamp() : null,
+                'value' => $this->result,
+            ],
+        ];
     }
-
-    /**
-     * @param ResultInterface $result
-     * @throws GuzzleException
-     * @throws NotInitializedException
-     */
-    public function resultWebhook(ResultInterface $result): void
-    {
-        $this->guardNotInitialized();
-        $this->getClient()->request('post', $this->resultUrl, ['json' => [
-            'type' => $result->getType(),
-            'value' => $result->getValue(),
-        ]]);
-    }
-
-    private function getClient(): Client
-    {
-        if (!$this->client) {
-            $this->client = new Client([
-                'headers' => [
-                    'User-Agent' => 'lv-plugin-process',
-                    'X-Process-Id' => $this->id,
-                ],
-            ]);
-        }
-        return $this->client;
-    }
-
-    /**
-     * @throws NotInitializedException
-     */
-    private function guardNotInitialized()
-    {
-        if ($this->init === null) {
-            throw new NotInitializedException("Process '{$this->getId()}' not yet initialized");
-        }
-    }
-
-
 }

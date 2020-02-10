@@ -17,8 +17,8 @@
   },
   "require": {
     "php": ">=7.1.0",
-    "guzzlehttp/guzzle": "^6.3",
-    "leadvertex/plugin-component-i18n": "^0.2.0"
+    "ext-json": "*",
+    "leadvertex/plugin-component-db": "^0.0.1"
   },
   "autoload-dev": {
     "psr-4": {
