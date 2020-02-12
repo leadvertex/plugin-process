@@ -27,6 +27,7 @@ class ProcessTest extends TestCase
         $process = new Process(10);
         $this->assertEquals(10, $process->getId());
         $process->initialize(100);
+        $this->assertTrue($process->isInitialized());
         $this->assertNull($process->getResult());
         $this->assertEmpty($process->getLastErrors());
     }
@@ -43,6 +44,7 @@ class ProcessTest extends TestCase
     {
         $this->expectException(RuntimeException::class);
         $process = new Process(10);
+        $this->assertFalse($process->isInitialized());
         $process->handle();
     }
 
@@ -169,5 +171,16 @@ class ProcessTest extends TestCase
         $this->assertEquals($process->getUpdatedAt()->getTimestamp(), $processInfoArray['result']['timestamp']);
         $this->assertArrayHasKey('value', $processInfoArray['result']);
         $this->assertEquals(true, $processInfoArray['result']['value']);
+    }
+
+    public function testProcessJsonSerializeWithoutInitAndResult()
+    {
+        $process = new Process(10);
+        $processInfoArray = $process->jsonSerialize();
+        $this->assertArrayHasKey('init', $processInfoArray);
+        $this->assertNull($processInfoArray['init']);
+
+        $this->assertArrayHasKey('result', $processInfoArray);
+        $this->assertNull($processInfoArray['result']);
     }
 }

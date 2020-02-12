@@ -51,10 +51,13 @@ class Process extends Model implements JsonSerializable
         $this->isInitialized = true;
     }
 
+    public function isInitialized()
+    {
+        return $this->isInitialized;
+    }
+
     public function getHandledCount(): int
     {
-        $this->guardInitialized();
-
         return $this->handled;
     }
 
@@ -67,8 +70,6 @@ class Process extends Model implements JsonSerializable
 
     public function getSkippedCount(): int
     {
-        $this->guardInitialized();
-
         return $this->skipped;
     }
 
@@ -81,15 +82,11 @@ class Process extends Model implements JsonSerializable
 
     public function getFailedCount(): int
     {
-        $this->guardInitialized();
-
         return $this->failed;
     }
 
     public function getLastErrors(): array
     {
-        $this->guardInitialized();
-
         return array_map(function (array $value) {
             return new Error($value['message'], $value['entityId']);
         }, array_reverse($this->errors));
@@ -113,8 +110,6 @@ class Process extends Model implements JsonSerializable
 
     public function getResult()
     {
-        $this->guardInitialized();
-
         return $this->result;
     }
 
@@ -161,23 +156,34 @@ class Process extends Model implements JsonSerializable
      */
     public function jsonSerialize()
     {
-        $this->guardInitialized();
+        if ($this->isInitialized) {
+            $init = [
+                'timestamp' => $this->getCreatedAt()->getTimestamp(),
+                'value' => $this->init
+            ];
+        } else {
+            $init = null;
+        }
+
+        if (!is_null($this->result)) {
+            $result = [
+                'timestamp' => $this->getUpdatedAt() ? $this->getUpdatedAt()->getTimestamp() : null,
+                'value' => $this->result,
+            ];
+        } else {
+            $result = null;
+        }
+
 
         return [
-            'init' => [
-                'timestamp' => $this->getCreatedAt()->getTimestamp(),
-                'value' => $this->init,
-            ],
+            'init' => $init,
             'handled' => $this->handled,
             'skipped' => $this->skipped,
             'failed' => [
                 'count' => $this->failed,
                 'last' => $this->errors,
             ],
-            'result' => [
-                'timestamp' => $this->getUpdatedAt() ? $this->getUpdatedAt()->getTimestamp() : null,
-                'value' => $this->result,
-            ],
+            'result' => $result,
         ];
     }
 
