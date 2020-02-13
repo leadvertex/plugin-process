@@ -154,13 +154,14 @@ class Process extends Model implements JsonSerializable
      */
     public function jsonSerialize()
     {
+        $init = null;
+        $result = null;
+
         if ($this->isInitialized) {
             $init = [
                 'timestamp' => $this->getCreatedAt()->getTimestamp(),
                 'value' => $this->init
             ];
-        } else {
-            $init = null;
         }
 
         if (!is_null($this->result)) {
@@ -168,10 +169,7 @@ class Process extends Model implements JsonSerializable
                 'timestamp' => $this->getUpdatedAt() ? $this->getUpdatedAt()->getTimestamp() : null,
                 'value' => $this->result,
             ];
-        } else {
-            $result = null;
         }
-
 
         return [
             'init' => $init,
