@@ -155,7 +155,6 @@ class Process extends Model implements JsonSerializable
     public function jsonSerialize()
     {
         $init = null;
-        $result = null;
 
         if ($this->isInitialized) {
             $init = [
@@ -163,6 +162,8 @@ class Process extends Model implements JsonSerializable
                 'value' => $this->init
             ];
         }
+
+        $result = null;
 
         if (!is_null($this->result)) {
             $result = [
