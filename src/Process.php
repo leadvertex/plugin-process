@@ -14,12 +14,14 @@ use JsonSerializable;
 use Leadvertex\Plugin\Components\Db\Model;
 use Leadvertex\Plugin\Components\Process\Components\Error;
 use LogicException;
+use RuntimeException;
 
 /**
  * Class Process
  * @package Leadvertex\Plugin\Components\Process
  *
  * @property int|null $init
+ * @property boolean $isInitialized
  * @property int $handled
  * @property int $skipped
  * @property int $failed
@@ -29,15 +31,29 @@ use LogicException;
 class Process extends Model implements JsonSerializable
 {
 
-    public function __construct(string $id = null, int $init = null)
+    public function __construct(string $id = null)
     {
         parent::__construct($id, '');
-        $this->init = $init;
         $this->handled = 0;
         $this->skipped = 0;
         $this->failed = 0;
         $this->errors = [];
         $this->result = null;
+        $this->isInitialized = false;
+    }
+
+    public function initialize(?int $init)
+    {
+        if ($this->isInitialized) {
+            throw new RuntimeException('Process already initialised');
+        }
+        $this->init = $init;
+        $this->isInitialized = true;
+    }
+
+    public function isInitialized()
+    {
+        return $this->isInitialized;
     }
 
     public function getHandledCount(): int
@@ -47,6 +63,8 @@ class Process extends Model implements JsonSerializable
 
     public function handle(): void
     {
+        $this->guardInitialized();
+
         $this->handled++;
     }
 
@@ -57,6 +75,8 @@ class Process extends Model implements JsonSerializable
 
     public function skip(): void
     {
+        $this->guardInitialized();
+
         $this->skipped++;
     }
 
@@ -75,11 +95,15 @@ class Process extends Model implements JsonSerializable
     public function addError(Error $error): void
     {
         $this->failed++;
-        $this->errors = array_slice($this->errors, 1, 19);
-        $this->errors[] = [
+        $errors = $this->errors;
+        if (count($errors) >= 20) {
+            array_shift($errors);
+        }
+        $errors[] = [
             'message' => $error->getMessage(),
             'entityId' => $error->getEntityId(),
         ];
+        $this->errors = $errors;
     }
 
     public function getResult()
@@ -91,11 +115,16 @@ class Process extends Model implements JsonSerializable
     {
         $this->addError($error);
         $this->setUpdatedAt(new DateTimeImmutable());
+        if ($this->init > 0) {
+            $this->failed += $this->init - $this->handled - $this->failed - $this->skipped;
+        }
         $this->result = false;
     }
 
     public function finish($value)
     {
+        $this->guardInitialized();
+
         if (!is_bool($value) && !is_int($value) && !is_string($value)) {
             throw new InvalidArgumentException("Finish value should be a 'bool', 'int' or 'string' type");
         }
@@ -116,6 +145,8 @@ class Process extends Model implements JsonSerializable
         if ($this->result !== null) {
             throw new LogicException('Process already finished and can not be changed');
         }
+
+        parent::__set($name, $value);
     }
 
     /**
@@ -123,21 +154,40 @@ class Process extends Model implements JsonSerializable
      */
     public function jsonSerialize()
     {
-        return [
-            'init' => [
+        $init = null;
+
+        if ($this->isInitialized) {
+            $init = [
                 'timestamp' => $this->getCreatedAt()->getTimestamp(),
-                'value' => $this->init,
-            ],
+                'value' => $this->init
+            ];
+        }
+
+        $result = null;
+
+        if (!is_null($this->result)) {
+            $result = [
+                'timestamp' => $this->getUpdatedAt() ? $this->getUpdatedAt()->getTimestamp() : null,
+                'value' => $this->result,
+            ];
+        }
+
+        return [
+            'init' => $init,
             'handled' => $this->handled,
             'skipped' => $this->skipped,
             'failed' => [
                 'count' => $this->failed,
                 'last' => $this->errors,
             ],
-            'result' => [
-                'timestamp' => $this->getUpdatedAt() ? $this->getUpdatedAt()->getTimestamp() : null,
-                'value' => $this->result,
-            ],
+            'result' => $result,
         ];
+    }
+
+    private function guardInitialized()
+    {
+        if (!$this->isInitialized) {
+            throw new RuntimeException('Process is not initialized');
+        }
     }
 }
