@@ -96,6 +96,23 @@ class ProcessTest extends TestCase
         $this->assertCount(1,  $process->getLastErrors());
     }
 
+    public function testProcessTerminateWithNullInit()
+    {
+        $process = new Process(10);
+        $process->initialize(null);
+        $process->terminate(new Error('Test fatal error', 2));
+        $this->assertEquals(1, $process->getFailedCount());
+        $this->assertCount(1,  $process->getLastErrors());
+    }
+
+    public function testProcessTerminateWithoutInitialization()
+    {
+        $process = new Process(10);
+        $process->terminate(new Error('Test fatal error', 2));
+        $this->assertEquals(1, $process->getFailedCount());
+        $this->assertCount(1,  $process->getLastErrors());
+    }
+
     public function testProcessFinish()
     {
         $process = new Process(10);

@@ -42,7 +42,7 @@ class Process extends Model implements JsonSerializable
         $this->isInitialized = false;
     }
 
-    public function initialize(int $init = null)
+    public function initialize(?int $init)
     {
         if ($this->isInitialized) {
             throw new RuntimeException('Process already initialised');
@@ -94,8 +94,6 @@ class Process extends Model implements JsonSerializable
 
     public function addError(Error $error): void
     {
-        $this->guardInitialized();
-
         $this->failed++;
         $errors = $this->errors;
         if (count($errors) >= 20) {
@@ -115,11 +113,11 @@ class Process extends Model implements JsonSerializable
 
     public function terminate(Error $error): void
     {
-        $this->guardInitialized();
-
         $this->addError($error);
         $this->setUpdatedAt(new DateTimeImmutable());
-        $this->failed += $this->init - $this->handled - $this->failed - $this->skipped;
+        if ($this->init > 0) {
+            $this->failed += $this->init - $this->handled - $this->failed - $this->skipped;
+        }
         $this->result = false;
     }
 
