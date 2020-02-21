@@ -7,7 +7,6 @@ use Leadvertex\Plugin\Components\Db\Components\Connector;
 use Leadvertex\Plugin\Components\Process\Components\Error;
 use Leadvertex\Plugin\Components\Process\Process;
 use LogicException;
-use Medoo\Medoo;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -16,10 +15,7 @@ class ProcessTest extends TestCase
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
-        Connector::init(new Medoo([
-            'database_type' => 'sqlite',
-            'database_file' => ''
-        ]), 1);
+        Connector::setCompanyId(1);
     }
 
     public function testCreateProcess()
