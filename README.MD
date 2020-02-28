@@ -11,13 +11,30 @@ For example, you can create new process like this:
 use Leadvertex\Plugin\Components\Process\Process;
 
 $process = new Process($id);
-$process->initialize(1);
+$process->save();
+
+$process->initialize(5);
+$process->save();
+...
+
 $process->handle();
+$process->handle();
+$process->handle();
+$process->save();
+...
+
+$process->skip();
+$process->save;
+...
+
+$process->addError(new Error('Error message', $entityId));
+$process->save();
+...
 
 $result = $process->finish(true);
 $process->save();
 ```
-Also, you need to use save() method to save actual information to DB.
+Note, that you need to use save() method to save actual information to DB.
 
 ###Initialize method
 Method `initialize()` is intended to indicate the number of entities being processed.\
@@ -41,6 +58,8 @@ It accepts an instance of `\Leadvertex\Plugin\Components\Process\Components\Erro
 ```
 $process->addError(new Error('Entity handle is failed', $entityId));
 $process->save();
+
+$errors = $process->getLastErrors();
 ```
 You can get list of 20 last errors with `getLastErrors()` method.
 
@@ -49,7 +68,14 @@ Method `terminate()` is intended to stop execution of process due to fatal error
 It accepts an instance of `\Leadvertex\Plugin\Components\Process\Components\Error` into itself,
 adds an error in similar to `addError()` method way, marks handle of all remaining entities as failed,
 sets result of process execution as `false` and sets `updatedAt` property of model as the current DateTime.\
-You can get result of the process execution with `getResult()` method.
+You can get result of the process execution with `getResult()` method.\
+You can use this method like this:
+```
+$process->terminate(new Error('Fatal error', $entityId));
+$process->save();
+
+$errors = $process->getLastErrors();
+```
 
 ###Finish method
 Method `finish()` is intended to be used when your process finished all its work.\
@@ -61,9 +87,10 @@ It accepts a result into itself which can be one of the 3 following types:
 Also it sets result of process execution as the accepted value
 and sets `updatedAt` property of model as the current DateTime.
 
-###JsonSerialize method
-Method `jsonSerialize()` is used with the method json_encode() to get all actual process info as serialized json. 
-You can use it like this:
+###JsonSerializable process
+Process implements a `jsonSerialize()` method, which means you can get process info as a serialized json by simply using
+json_encode to process instance.
+For example, you can use it like this:
 ```
 $response = json_encode($process);
 ```
