@@ -88,7 +88,7 @@ Also it sets result of process execution as the accepted value
 and sets `updatedAt` property of model as the current DateTime.
 
 ### JsonSerializable process
-Process implements a `jsonSerialize()` method, which means you can get process info as a serialized json by simply using
+Process implements a `jsonSerialize()` interface, which means you can get process info as a serialized json by simply using
 json_encode to process instance.
 For example, you can use it like this:
 ```
