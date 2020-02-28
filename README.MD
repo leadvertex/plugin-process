@@ -4,10 +4,17 @@ about the current state of the process based on the base DB model
 [from DB plugin component](https://github.com/leadvertex/plugin-component-db "from DB plugin component")
 and accepts process id into itself.
 
+## Installation
+```shell script
+composer require leadvertex/plugin-component-process
+```
+
 ## Usage
 For example, you can create new process like this:
-```
+```php
 <?php
+require 'vendor/autoload.php';
+
 use Leadvertex\Plugin\Components\Process\Process;
 
 $process = new Process($id);
@@ -55,7 +62,7 @@ You can get current number of skipped entities with `getSkippedCount()` method.
 ### AddError method
 Method `addError()` is intended to be used when handle of current entity fails.\
 It accepts an instance of `\Leadvertex\Plugin\Components\Process\Components\Error` into itself. You can use it like this:
-```
+```php
 $process->addError(new Error('Entity handle is failed', $entityId));
 $process->save();
 
@@ -70,7 +77,7 @@ adds an error in similar to `addError()` method way, marks handle of all remaini
 sets result of process execution as `false` and sets `updatedAt` property of model as the current DateTime.\
 You can get result of the process execution with `getResult()` method.\
 You can use this method like this:
-```
+```php
 $process->terminate(new Error('Fatal error', $entityId));
 $process->save();
 
@@ -91,6 +98,6 @@ and sets `updatedAt` property of model as the current DateTime.
 Process implements a built-in `jsonSerializable` interface, which means you can get process info as a serialized json by simply using
 json_encode to process instance.
 For example, you can use it like this:
-```
+```php
 $response = json_encode($process);
 ```
