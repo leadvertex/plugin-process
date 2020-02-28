@@ -15,7 +15,9 @@ $process->initialize(1);
 $process->handle();
 
 $result = $process->finish(true);
+$process->save();
 ```
+Also, you need to use save() method to save actual information to DB.
 
 ###Initialize method
 Method `initialize()` is intended to indicate the number of entities being processed.\
@@ -38,6 +40,7 @@ Method `addError()` is intended to be used when handle of current entity fails.\
 It accepts an instance of `\Leadvertex\Plugin\Components\Process\Components\Error` into itself. You can use it like this:
 ```
 $process->addError(new Error('Entity handle is failed', $entityId));
+$process->save();
 ```
 You can get list of 20 last errors with `getLastErrors()` method.
 
