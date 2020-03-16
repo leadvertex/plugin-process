@@ -7,7 +7,6 @@ use Leadvertex\Plugin\Components\Db\Components\Connector;
 use Leadvertex\Plugin\Components\Process\Components\Error;
 use Leadvertex\Plugin\Components\Process\Process;
 use LogicException;
-use Medoo\Medoo;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -16,10 +15,7 @@ class ProcessTest extends TestCase
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
-        Connector::init(new Medoo([
-            'database_type' => 'sqlite',
-            'database_file' => ''
-        ]), 1);
+        Connector::setCompanyId(1);
     }
 
     public function testCreateProcess()
@@ -164,11 +160,11 @@ class ProcessTest extends TestCase
 
         $this->assertIsArray($processInfoArray);
 
-        $this->assertArrayHasKey('init', $processInfoArray);
-        $this->assertArrayHasKey('timestamp', $processInfoArray['init']);
-        $this->assertEquals($process->getCreatedAt()->getTimestamp(), $processInfoArray['init']['timestamp']);
-        $this->assertArrayHasKey('value', $processInfoArray['init']);
-        $this->assertEquals(100, $processInfoArray['init']['value']);
+        $this->assertArrayHasKey('initialized', $processInfoArray);
+        $this->assertArrayHasKey('timestamp', $processInfoArray['initialized']);
+        $this->assertEquals($process->getCreatedAt()->getTimestamp(), $processInfoArray['initialized']['timestamp']);
+        $this->assertArrayHasKey('value', $processInfoArray['initialized']);
+        $this->assertEquals(100, $processInfoArray['initialized']['value']);
 
         $this->assertArrayHasKey('handled', $processInfoArray);
         $this->assertEquals(2, $processInfoArray['handled']);
@@ -194,8 +190,8 @@ class ProcessTest extends TestCase
     {
         $process = new Process(10);
         $processInfoArray = $process->jsonSerialize();
-        $this->assertArrayHasKey('init', $processInfoArray);
-        $this->assertNull($processInfoArray['init']);
+        $this->assertArrayHasKey('initialized', $processInfoArray);
+        $this->assertNull($processInfoArray['initialized']);
 
         $this->assertArrayHasKey('result', $processInfoArray);
         $this->assertNull($processInfoArray['result']);
