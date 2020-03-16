@@ -20,7 +20,6 @@ use RuntimeException;
  * Class Process
  * @package Leadvertex\Plugin\Components\Process
  *
- * @property string $state
  * @property int|null $initialized
  * @property DateTimeImmutable|null $initializedAt
  * @property boolean $isInitialized
@@ -70,6 +69,12 @@ class Process extends Model implements JsonSerializable
 
     public function setState(string $state)
     {
+        if (!in_array(
+            $state,
+            [self::STATE_SCHEDULED, self::STATE_PROCESSING, self::STATE_POST_PROCESSING, self::STATE_ENDED]
+        )) {
+            throw new InvalidArgumentException('Invalid process state: ' . $state);
+        }
         $this->setTag_1($state);
         $this->setUpdatedAt(new DateTimeImmutable());
     }
