@@ -160,11 +160,11 @@ class ProcessTest extends TestCase
 
         $this->assertIsArray($processInfoArray);
 
-        $this->assertArrayHasKey('init', $processInfoArray);
-        $this->assertArrayHasKey('timestamp', $processInfoArray['init']);
-        $this->assertEquals($process->getCreatedAt()->getTimestamp(), $processInfoArray['init']['timestamp']);
-        $this->assertArrayHasKey('value', $processInfoArray['init']);
-        $this->assertEquals(100, $processInfoArray['init']['value']);
+        $this->assertArrayHasKey('initialized', $processInfoArray);
+        $this->assertArrayHasKey('timestamp', $processInfoArray['initialized']);
+        $this->assertEquals($process->getCreatedAt()->getTimestamp(), $processInfoArray['initialized']['timestamp']);
+        $this->assertArrayHasKey('value', $processInfoArray['initialized']);
+        $this->assertEquals(100, $processInfoArray['initialized']['value']);
 
         $this->assertArrayHasKey('handled', $processInfoArray);
         $this->assertEquals(2, $processInfoArray['handled']);
@@ -190,8 +190,8 @@ class ProcessTest extends TestCase
     {
         $process = new Process(10);
         $processInfoArray = $process->jsonSerialize();
-        $this->assertArrayHasKey('init', $processInfoArray);
-        $this->assertNull($processInfoArray['init']);
+        $this->assertArrayHasKey('initialized', $processInfoArray);
+        $this->assertNull($processInfoArray['initialized']);
 
         $this->assertArrayHasKey('result', $processInfoArray);
         $this->assertNull($processInfoArray['result']);

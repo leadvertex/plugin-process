@@ -20,7 +20,9 @@ use RuntimeException;
  * Class Process
  * @package Leadvertex\Plugin\Components\Process
  *
- * @property int|null $init
+ * @property string $state
+ * @property int|null $initialized
+ * @property DateTimeImmutable|null $initializedAt
  * @property boolean $isInitialized
  * @property int $handled
  * @property int $skipped
@@ -31,6 +33,11 @@ use RuntimeException;
 class Process extends Model implements JsonSerializable
 {
 
+    const STATE_SCHEDULED = 'scheduled';
+    const STATE_PROCESSING = 'processing';
+    const STATE_POST_PROCESSING = 'post_processing';
+    const STATE_ENDED = 'ended';
+
     public function __construct(string $id = null)
     {
         parent::__construct($id, '');
@@ -40,6 +47,7 @@ class Process extends Model implements JsonSerializable
         $this->errors = [];
         $this->result = null;
         $this->isInitialized = false;
+        $this->setState(self::STATE_SCHEDULED);
     }
 
     public function initialize(?int $init)
@@ -47,8 +55,23 @@ class Process extends Model implements JsonSerializable
         if ($this->isInitialized) {
             throw new RuntimeException('Process already initialised');
         }
-        $this->init = $init;
+
+        $this->initialized = $init;
+        $this->initializedAt = new DateTimeImmutable();
         $this->isInitialized = true;
+
+        $this->setState(self::STATE_PROCESSING);
+    }
+
+    public function getState()
+    {
+        return $this->getTag_1();
+    }
+
+    public function setState(string $state)
+    {
+        $this->setTag_1($state);
+        $this->setUpdatedAt(new DateTimeImmutable());
     }
 
     public function isInitialized()
@@ -114,11 +137,11 @@ class Process extends Model implements JsonSerializable
     public function terminate(Error $error): void
     {
         $this->addError($error);
-        $this->setUpdatedAt(new DateTimeImmutable());
-        if ($this->init > 0) {
-            $this->failed += $this->init - $this->handled - $this->failed - $this->skipped;
+        if ($this->initialized > 0) {
+            $this->failed += $this->initialized - $this->handled - $this->failed - $this->skipped;
         }
         $this->result = false;
+        $this->setState(self::STATE_ENDED);
     }
 
     public function finish($value)
@@ -129,15 +152,15 @@ class Process extends Model implements JsonSerializable
             throw new InvalidArgumentException("Finish value should be a 'bool', 'int' or 'string' type");
         }
 
-        if ($this->init > 0) {
-            $skipped = $this->init - $this->handled - $this->failed - $this->skipped;
+        if ($this->initialized > 0) {
+            $skipped = $this->initialized - $this->handled - $this->failed - $this->skipped;
             if ($skipped > 0) {
                 $this->skipped+= $skipped;
             }
         }
 
-        $this->setUpdatedAt(new DateTimeImmutable());
         $this->result = $value;
+        $this->setState(self::STATE_ENDED);
     }
 
     public function __set($name, $value)
@@ -155,25 +178,27 @@ class Process extends Model implements JsonSerializable
     public function jsonSerialize()
     {
         $init = null;
-
         if ($this->isInitialized) {
             $init = [
-                'timestamp' => $this->getCreatedAt()->getTimestamp(),
-                'value' => $this->init
+                'timestamp' => $this->initializedAt->getTimestamp(),
+                'value' => $this->initialized
             ];
         }
 
         $result = null;
-
         if (!is_null($this->result)) {
             $result = [
-                'timestamp' => $this->getUpdatedAt() ? $this->getUpdatedAt()->getTimestamp() : null,
+                'timestamp' => $this->getUpdatedAt()->getTimestamp(),
                 'value' => $this->result,
             ];
         }
 
         return [
-            'init' => $init,
+            'state' => [
+                'timestamp' => $this->getUpdatedAt()->getTimestamp(),
+                'value' => $this->getState()
+            ],
+            'initialized' => $init,
             'handled' => $this->handled,
             'skipped' => $this->skipped,
             'failed' => [
