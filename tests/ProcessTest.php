@@ -22,10 +22,12 @@ class ProcessTest extends TestCase
     {
         $process = new Process(10);
         $this->assertEquals(10, $process->getId());
+        $this->assertEquals(Process::STATE_SCHEDULED, $process->getState());
         $process->initialize(100);
         $this->assertTrue($process->isInitialized());
         $this->assertNull($process->getResult());
         $this->assertEmpty($process->getLastErrors());
+        $this->assertEquals(Process::STATE_PROCESSING, $process->getState());
     }
 
     public function testDoubleInitProcess()
@@ -34,6 +36,22 @@ class ProcessTest extends TestCase
         $process = new Process(10);
         $process->initialize(100);
         $process->initialize(100);
+    }
+
+    public function testSetProcessState()
+    {
+        $process = new Process(10);
+        $process->initialize(100);
+        $process->setState(Process::STATE_POST_PROCESSING);
+        $this->assertEquals(Process::STATE_POST_PROCESSING, $process->getState());
+    }
+
+    public function testSetInvalidProcessState()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $process = new Process(10);
+        $process->initialize(100);
+        $process->setState('TestState');
     }
 
     public function testProcessActionWithoutInit()
@@ -88,6 +106,7 @@ class ProcessTest extends TestCase
         $process = new Process(10);
         $process->initialize(100);
         $process->terminate(new Error('Test fatal error', 2));
+        $this->assertEquals(Process::STATE_ENDED, $process->getState());
         $this->assertEquals(100, $process->getFailedCount());
         $this->assertCount(1,  $process->getLastErrors());
     }
@@ -115,16 +134,19 @@ class ProcessTest extends TestCase
         $process->initialize(100);
         $process->finish(1);
         $this->assertEquals(1, $process->result);
+        $this->assertEquals(Process::STATE_ENDED, $process->getState());
 
         $process = new Process(10);
         $process->initialize(100);
         $process->finish('Test');
         $this->assertEquals('Test', $process->result);
+        $this->assertEquals(Process::STATE_ENDED, $process->getState());
 
         $process = new Process(10);
         $process->initialize(100);
         $process->finish(false);
         $this->assertEquals(false, $process->result);
+        $this->assertEquals(Process::STATE_ENDED, $process->getState());
     }
 
     public function testProcessActionAfterFinish()
