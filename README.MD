@@ -43,6 +43,23 @@ $process->save();
 ```
 Note, that you need to use save() method to save actual information to DB.
 
+### Process states
+Every `Process` has `state` property for current processing state:
+- `Process::STATE_STATE_SCHEDULED` - sets when you create the process. It indicates that the process has been queued for processing.
+- `Process::STATE_PROCESSING` - sets when you initialize process. It indicates that the process execution has been started.
+- `Process::STATE_POST_PROCESSING` - sets manually. It can be used to indicate the end of the main process and the beginning of additional actions with the result.
+- `Process::STATE_ENDED` - sets when you terminate or finish process. It indicates that the process has been finished despite the result.
+
+To get current process state you can use `getState()` method:
+```php
+$state = $process->getState();
+```
+To set state you can use `setState` method. Note, that you can use only `Process` constants:
+```php
+$process->setState(Process::STATE_POST_PROCESSING); // OK
+$process->setState('new_state'); // Wrong. This line would throw InvalidArgument exception
+```
+
 ### Initialize method
 Method `initialize()` is intended to indicate the number of entities being processed.\
 It accepts a number of entities, to be handled. The number may be null for cases where you cannot determine
