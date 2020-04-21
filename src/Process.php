@@ -59,7 +59,15 @@ class Process extends Model implements JsonSerializable
         return $this->description;
     }
 
-    public function initialize(?int $init)
+    /**
+     * @param string|null $description
+     */
+    public function setDescription(?string $description): void
+    {
+        $this->description = $description;
+    }
+
+    public function initialize(?int $init): void
     {
         if ($this->isInitialized) {
             throw new RuntimeException('Process already initialised');
@@ -77,7 +85,7 @@ class Process extends Model implements JsonSerializable
         return $this->getTag_1();
     }
 
-    public function setState(string $state)
+    public function setState(string $state): void
     {
         if (!in_array(
             $state,
@@ -159,7 +167,7 @@ class Process extends Model implements JsonSerializable
         $this->setState(self::STATE_ENDED);
     }
 
-    public function finish($value)
+    public function finish($value): void
     {
         $this->guardInitialized();
 
@@ -225,7 +233,7 @@ class Process extends Model implements JsonSerializable
         ];
     }
 
-    private function guardInitialized()
+    private function guardInitialized(): void
     {
         if (!$this->isInitialized) {
             throw new RuntimeException('Process is not initialized');

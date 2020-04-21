@@ -31,6 +31,16 @@ class ProcessTest extends TestCase
         $this->assertEquals(Process::STATE_PROCESSING, $process->getState());
     }
 
+    public function testSetDescription()
+    {
+        $process = new Process(10);
+        $this->assertNull($process->getDescription());
+        $process->setDescription('New description');
+        $this->assertEquals('New description', $process->getDescription());
+        $process->setDescription(null);
+        $this->assertNull($process->getDescription());
+    }
+
     public function testDoubleInitProcess()
     {
         $this->expectException(RuntimeException::class);
