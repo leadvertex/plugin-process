@@ -1,17 +1,17 @@
 <?php
 
-namespace Leadvertex\Plugin\Components\Process\Tests;
+namespace Leadvertex\Plugin\Components\Process;
 
 use InvalidArgumentException;
 use Leadvertex\Plugin\Components\Db\Components\Connector;
 use Leadvertex\Plugin\Components\Process\Components\Error;
-use Leadvertex\Plugin\Components\Process\Process;
 use LogicException;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 class ProcessTest extends TestCase
 {
+
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
@@ -20,10 +20,11 @@ class ProcessTest extends TestCase
 
     public function testCreateProcess()
     {
-        $process = new Process(10);
+        $process = new Process(10, 'Description here');
         $this->assertEquals(10, $process->getId());
         $this->assertEquals(Process::STATE_SCHEDULED, $process->getState());
         $process->initialize(100);
+        $this->assertEquals('Description here', $process->getDescription());
         $this->assertTrue($process->isInitialized());
         $this->assertNull($process->getResult());
         $this->assertEmpty($process->getLastErrors());
@@ -168,7 +169,7 @@ class ProcessTest extends TestCase
 
     public function testProcessJsonSerialize()
     {
-        $process = new Process(10);
+        $process = new Process(10, 'Description here');
         $process->initialize(100);
         $process->addError(new Error( 'Test error'));
         $process->handle();
@@ -181,6 +182,8 @@ class ProcessTest extends TestCase
         $processInfoArray = $process->jsonSerialize();
 
         $this->assertIsArray($processInfoArray);
+
+        $this->assertEquals('Description here', $processInfoArray['description']);
 
         $this->assertArrayHasKey('initialized', $processInfoArray);
         $this->assertArrayHasKey('timestamp', $processInfoArray['initialized']);
@@ -214,6 +217,7 @@ class ProcessTest extends TestCase
         $processInfoArray = $process->jsonSerialize();
         $this->assertArrayHasKey('initialized', $processInfoArray);
         $this->assertNull($processInfoArray['initialized']);
+        $this->assertNull($processInfoArray['description']);
 
         $this->assertArrayHasKey('result', $processInfoArray);
         $this->assertNull($processInfoArray['result']);

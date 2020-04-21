@@ -1,6 +1,6 @@
 <?php
 
-namespace Leadvertex\Plugin\Components\Process\Tests;
+namespace Leadvertex\Plugin\Components\Process;
 
 use InvalidArgumentException;
 use Leadvertex\Plugin\Components\Process\Components\Error;

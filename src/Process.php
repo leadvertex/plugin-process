@@ -20,6 +20,7 @@ use RuntimeException;
  * Class Process
  * @package Leadvertex\Plugin\Components\Process
  *
+ * @property string|null $description
  * @property int|null $initialized
  * @property DateTimeImmutable|null $initializedAt
  * @property boolean $isInitialized
@@ -37,9 +38,10 @@ class Process extends Model implements JsonSerializable
     const STATE_POST_PROCESSING = 'post_processing';
     const STATE_ENDED = 'ended';
 
-    public function __construct(string $id = null)
+    public function __construct(string $id = null, string $description = null)
     {
         parent::__construct($id, '');
+        $this->description = $description;
         $this->handled = 0;
         $this->skipped = 0;
         $this->failed = 0;
@@ -47,6 +49,14 @@ class Process extends Model implements JsonSerializable
         $this->result = null;
         $this->isInitialized = false;
         $this->setState(self::STATE_SCHEDULED);
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getDescription(): ?string
+    {
+        return $this->description;
     }
 
     public function initialize(?int $init)
@@ -199,6 +209,7 @@ class Process extends Model implements JsonSerializable
         }
 
         return [
+            'description' => $this->description,
             'state' => [
                 'timestamp' => $this->getUpdatedAt()->getTimestamp(),
                 'value' => $this->getState()
