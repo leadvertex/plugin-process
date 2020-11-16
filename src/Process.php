@@ -80,7 +80,7 @@ class Process extends Model implements JsonSerializable
         $this->setState(self::STATE_PROCESSING);
     }
 
-    public function getState()
+    public function getState(): string
     {
         return $this->getTag_1();
     }
@@ -97,7 +97,7 @@ class Process extends Model implements JsonSerializable
         $this->setUpdatedAt(new DateTimeImmutable());
     }
 
-    public function isInitialized()
+    public function isInitialized(): bool
     {
         return $this->isInitialized;
     }
