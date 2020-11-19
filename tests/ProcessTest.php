@@ -3,7 +3,6 @@
 namespace Leadvertex\Plugin\Components\Process;
 
 use InvalidArgumentException;
-use Leadvertex\Plugin\Components\Db\Components\Connector;
 use Leadvertex\Plugin\Components\Process\Components\Error;
 use LogicException;
 use PHPUnit\Framework\TestCase;
@@ -15,7 +14,6 @@ class ProcessTest extends TestCase
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
-        Connector::setCompanyId(1);
     }
 
     public function testCreateProcess()
@@ -144,23 +142,23 @@ class ProcessTest extends TestCase
         $process = new Process(10);
         $process->initialize(100);
         $process->finish(1);
-        $this->assertEquals(1, $process->result);
+        $this->assertEquals(1, $process->getResult());
         $this->assertEquals(Process::STATE_ENDED, $process->getState());
 
         $process = new Process(10);
         $process->initialize(100);
         $process->finish('Test');
-        $this->assertEquals('Test', $process->result);
+        $this->assertEquals('Test', $process->getResult());
         $this->assertEquals(Process::STATE_ENDED, $process->getState());
 
         $process = new Process(10);
         $process->initialize(100);
         $process->finish(false);
-        $this->assertEquals(false, $process->result);
+        $this->assertEquals(false, $process->getResult());
         $this->assertEquals(Process::STATE_ENDED, $process->getState());
     }
 
-    public function testProcessActionAfterFinish()
+    public function testProcessHandleAfterFinish()
     {
         $this->expectException(LogicException::class);
         $process = new Process(10);
@@ -197,7 +195,7 @@ class ProcessTest extends TestCase
 
         $this->assertArrayHasKey('initialized', $processInfoArray);
         $this->assertArrayHasKey('timestamp', $processInfoArray['initialized']);
-        $this->assertEquals($process->getCreatedAt()->getTimestamp(), $processInfoArray['initialized']['timestamp']);
+        $this->assertEquals($process->getInitializedAt(), $processInfoArray['initialized']['timestamp']);
         $this->assertArrayHasKey('value', $processInfoArray['initialized']);
         $this->assertEquals(100, $processInfoArray['initialized']['value']);
 
@@ -216,7 +214,7 @@ class ProcessTest extends TestCase
 
         $this->assertArrayHasKey('result', $processInfoArray);
         $this->assertArrayHasKey('timestamp', $processInfoArray['result']);
-        $this->assertEquals($process->getUpdatedAt()->getTimestamp(), $processInfoArray['result']['timestamp']);
+        $this->assertEquals($process->getUpdatedAt(), $processInfoArray['result']['timestamp']);
         $this->assertArrayHasKey('value', $processInfoArray['result']);
         $this->assertEquals(true, $processInfoArray['result']['value']);
     }

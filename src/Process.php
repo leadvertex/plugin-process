@@ -8,47 +8,72 @@
 namespace Leadvertex\Plugin\Components\Process;
 
 
-use DateTimeImmutable;
 use InvalidArgumentException;
 use JsonSerializable;
-use Leadvertex\Plugin\Components\Db\Model;
+use Leadvertex\Plugin\Components\Db\ModelInterface;
+use Leadvertex\Plugin\Components\Db\ModelTrait;
 use Leadvertex\Plugin\Components\Process\Components\Error;
 use LogicException;
 use RuntimeException;
 
-/**
- * Class Process
- * @package Leadvertex\Plugin\Components\Process
- *
- * @property string|null $description
- * @property int|null $initialized
- * @property DateTimeImmutable|null $initializedAt
- * @property boolean $isInitialized
- * @property int $handled
- * @property int $skipped
- * @property int $failed
- * @property array $errors
- * @property bool|int|string|null $result
- */
-class Process extends Model implements JsonSerializable
+class Process implements ModelInterface, JsonSerializable
 {
+
+    use ModelTrait;
+
+    protected string $state;
+
+    protected int $updatedAt;
+
+    protected ?int $initialized = null;
+
+    protected ?int $initializedAt = null;
+
+    protected int $handled = 0;
+
+    protected int $skipped = 0;
+
+    protected int $failed = 0;
+
+    protected array $errors = [];
+
+    /** @var int|string|null */
+    protected $result = null;
+
+    protected ?string $description = null;
 
     const STATE_SCHEDULED = 'scheduled';
     const STATE_PROCESSING = 'processing';
     const STATE_POST_PROCESSING = 'post_processing';
     const STATE_ENDED = 'ended';
 
-    public function __construct(string $id = null, string $description = null)
+    public function __construct(string $id, string $description = null)
     {
-        parent::__construct($id, '');
-        $this->description = $description;
-        $this->handled = 0;
-        $this->skipped = 0;
-        $this->failed = 0;
-        $this->errors = [];
-        $this->result = null;
-        $this->isInitialized = false;
+        $this->id = $id;
         $this->setState(self::STATE_SCHEDULED);
+        $this->description = $description;
+    }
+
+    public function getState(): string
+    {
+        return $this->state;
+    }
+
+    public function setState(string $state): void
+    {
+        $this->guardFinished();
+        $stateList = [self::STATE_SCHEDULED, self::STATE_PROCESSING, self::STATE_POST_PROCESSING, self::STATE_ENDED];
+        if (!in_array($state, $stateList)) {
+            throw new InvalidArgumentException('Invalid process state: ' . $state);
+        }
+
+        $this->state = $state;
+        $this->updatedAt = time();
+    }
+
+    public function getUpdatedAt(): int
+    {
+        return $this->updatedAt;
     }
 
     /**
@@ -69,37 +94,24 @@ class Process extends Model implements JsonSerializable
 
     public function initialize(?int $init): void
     {
-        if ($this->isInitialized) {
+        if ($this->initializedAt !== null) {
             throw new RuntimeException('Process already initialised');
         }
 
         $this->initialized = $init;
-        $this->initializedAt = new DateTimeImmutable();
-        $this->isInitialized = true;
+        $this->initializedAt = time();
 
         $this->setState(self::STATE_PROCESSING);
     }
 
-    public function getState(): string
+    public function getInitializedAt(): ?int
     {
-        return $this->getTag_1();
-    }
-
-    public function setState(string $state): void
-    {
-        if (!in_array(
-            $state,
-            [self::STATE_SCHEDULED, self::STATE_PROCESSING, self::STATE_POST_PROCESSING, self::STATE_ENDED]
-        )) {
-            throw new InvalidArgumentException('Invalid process state: ' . $state);
-        }
-        $this->setTag_1($state);
-        $this->setUpdatedAt(new DateTimeImmutable());
+        return $this->initializedAt;
     }
 
     public function isInitialized(): bool
     {
-        return $this->isInitialized;
+        return $this->initializedAt !== null;
     }
 
     public function getHandledCount(): int
@@ -110,7 +122,7 @@ class Process extends Model implements JsonSerializable
     public function handle(): void
     {
         $this->guardInitialized();
-
+        $this->guardFinished();
         $this->handled++;
     }
 
@@ -122,7 +134,7 @@ class Process extends Model implements JsonSerializable
     public function skip(): void
     {
         $this->guardInitialized();
-
+        $this->guardFinished();
         $this->skipped++;
     }
 
@@ -140,16 +152,16 @@ class Process extends Model implements JsonSerializable
 
     public function addError(Error $error): void
     {
+        $this->guardFinished();
         $this->failed++;
-        $errors = $this->errors;
-        if (count($errors) >= 20) {
-            array_shift($errors);
+        if (count($this->errors) >= 20) {
+            array_shift($this->errors);
         }
-        $errors[] = [
+
+        $this->errors[] = [
             'message' => $error->getMessage(),
             'entityId' => $error->getEntityId(),
         ];
-        $this->errors = $errors;
     }
 
     public function getResult()
@@ -159,16 +171,18 @@ class Process extends Model implements JsonSerializable
 
     public function terminate(Error $error): void
     {
+        $this->guardFinished();
         $this->addError($error);
         if ($this->initialized > 0) {
             $this->failed += $this->initialized - $this->handled - $this->failed - $this->skipped;
         }
-        $this->result = false;
         $this->setState(self::STATE_ENDED);
+        $this->result = false;
     }
 
     public function finish($value): void
     {
+        $this->guardFinished();
         $this->guardInitialized();
 
         if (!is_bool($value) && !is_int($value) && !is_string($value)) {
@@ -182,17 +196,8 @@ class Process extends Model implements JsonSerializable
             }
         }
 
-        $this->result = $value;
         $this->setState(self::STATE_ENDED);
-    }
-
-    public function __set($name, $value)
-    {
-        if ($this->result !== null) {
-            throw new LogicException('Process already finished and can not be changed');
-        }
-
-        parent::__set($name, $value);
+        $this->result = $value;
     }
 
     /**
@@ -201,9 +206,9 @@ class Process extends Model implements JsonSerializable
     public function jsonSerialize()
     {
         $init = null;
-        if ($this->isInitialized) {
+        if ($this->isInitialized()) {
             $init = [
-                'timestamp' => $this->initializedAt->getTimestamp(),
+                'timestamp' => $this->initializedAt,
                 'value' => $this->initialized
             ];
         }
@@ -211,7 +216,7 @@ class Process extends Model implements JsonSerializable
         $result = null;
         if (!is_null($this->result)) {
             $result = [
-                'timestamp' => $this->getUpdatedAt()->getTimestamp(),
+                'timestamp' => $this->updatedAt,
                 'value' => $this->result,
             ];
         }
@@ -219,7 +224,7 @@ class Process extends Model implements JsonSerializable
         return [
             'description' => $this->description,
             'state' => [
-                'timestamp' => $this->getUpdatedAt()->getTimestamp(),
+                'timestamp' => $this->updatedAt,
                 'value' => $this->getState()
             ],
             'initialized' => $init,
@@ -235,8 +240,43 @@ class Process extends Model implements JsonSerializable
 
     private function guardInitialized(): void
     {
-        if (!$this->isInitialized) {
+        if ($this->initializedAt === null) {
             throw new RuntimeException('Process is not initialized');
         }
+    }
+
+    private function guardFinished(): void
+    {
+        if ($this->result !== null) {
+            throw new LogicException('Process already finished and can not be changed');
+        }
+    }
+
+    protected static function beforeDeserialize(array $data): array
+    {
+        $data['errors'] = json_decode($data['errors']);
+        return $data;
+    }
+
+    protected static function afterSerialize(array $data): array
+    {
+        $data['errors'] = json_encode($data['errors']);
+        return $data;
+    }
+
+    public static function schema(): array
+    {
+        return [
+            'state' => ['VARCHAR(20)'],
+            'updatedAt' => [],
+            'initialized' => ['INT'],
+            'initializedAt' => ['INT'],
+            'handled' => ['INT'],
+            'skipped' => ['INT'],
+            'failed' => ['INT'],
+            'errors' => ['TEXT'],
+            'result' => ['VARCHAR(512)'],
+            'description' => ['TEXT'],
+        ];
     }
 }
