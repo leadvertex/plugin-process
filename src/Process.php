@@ -21,6 +21,8 @@ class Process implements ModelInterface, JsonSerializable
 
     use ModelTrait;
 
+    protected int $createdAt;
+
     protected string $state;
 
     protected int $updatedAt;
@@ -50,8 +52,14 @@ class Process implements ModelInterface, JsonSerializable
     public function __construct(string $id, string $description = null)
     {
         $this->id = $id;
+        $this->createdAt = time();
         $this->setState(self::STATE_SCHEDULED);
         $this->description = $description;
+    }
+
+    public function getCreatedAt(): int
+    {
+        return $this->createdAt;
     }
 
     public function getState(): string
@@ -267,13 +275,14 @@ class Process implements ModelInterface, JsonSerializable
     public static function schema(): array
     {
         return [
-            'state' => ['VARCHAR(20)'],
-            'updatedAt' => [],
+            'createdAt' => ['INT', 'NOT NULL'],
+            'state' => ['VARCHAR(20)', 'NOT NULL'],
+            'updatedAt' => ['INT'],
             'initialized' => ['INT'],
             'initializedAt' => ['INT'],
-            'handled' => ['INT'],
-            'skipped' => ['INT'],
-            'failed' => ['INT'],
+            'handled' => ['INT', 'NOT NULL'],
+            'skipped' => ['INT', 'NOT NULL'],
+            'failed' => ['INT', 'NOT NULL'],
             'errors' => ['TEXT'],
             'result' => ['VARCHAR(512)'],
             'description' => ['TEXT'],
