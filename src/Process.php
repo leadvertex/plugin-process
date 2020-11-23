@@ -268,15 +268,15 @@ class Process implements ModelInterface, JsonSerializable
         }
     }
 
-    protected static function beforeDeserialize(array $data): array
+    protected static function beforeWrite(array $data): array
     {
-        $data['errors'] = json_decode($data['errors']);
+        $data['errors'] = json_encode($data['errors']);
         return $data;
     }
 
-    protected static function afterSerialize(array $data): array
+    protected static function afterRead(array $data): array
     {
-        $data['errors'] = json_encode($data['errors']);
+        $data['errors'] = json_decode($data['errors']);
         return $data;
     }
 
