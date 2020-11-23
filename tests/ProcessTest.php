@@ -18,7 +18,8 @@ class ProcessTest extends TestCase
 
     public function testCreateProcess()
     {
-        $process = new Process(10, 'Description here');
+        $process = new Process(1, 10, 'Description here');
+        $this->assertEquals(1, $process->getCompanyId());
         $this->assertEquals(10, $process->getId());
         $this->assertEquals(Process::STATE_SCHEDULED, $process->getState());
         $process->initialize(100);
@@ -31,7 +32,7 @@ class ProcessTest extends TestCase
 
     public function testSetDescription()
     {
-        $process = new Process(10);
+        $process = new Process(1, 10);
         $this->assertNull($process->getDescription());
         $process->setDescription('New description');
         $this->assertEquals('New description', $process->getDescription());
@@ -42,14 +43,14 @@ class ProcessTest extends TestCase
     public function testDoubleInitProcess()
     {
         $this->expectException(RuntimeException::class);
-        $process = new Process(10);
+        $process = new Process(1, 10);
         $process->initialize(100);
         $process->initialize(100);
     }
 
     public function testSetProcessState()
     {
-        $process = new Process(10);
+        $process = new Process(1, 10);
         $process->initialize(100);
         $process->setState(Process::STATE_POST_PROCESSING);
         $this->assertEquals(Process::STATE_POST_PROCESSING, $process->getState());
@@ -58,7 +59,7 @@ class ProcessTest extends TestCase
     public function testSetInvalidProcessState()
     {
         $this->expectException(InvalidArgumentException::class);
-        $process = new Process(10);
+        $process = new Process(1, 10);
         $process->initialize(100);
         $process->setState('TestState');
     }
@@ -66,14 +67,14 @@ class ProcessTest extends TestCase
     public function testProcessActionWithoutInit()
     {
         $this->expectException(RuntimeException::class);
-        $process = new Process(10);
+        $process = new Process(1, 10);
         $this->assertFalse($process->isInitialized());
         $process->handle();
     }
 
     public function testProcessHandle()
     {
-        $process = new Process(10);
+        $process = new Process(1, 10);
         $process->initialize(100);
         $this->assertEquals(0, $process->getHandledCount());
         $process->handle();
@@ -82,7 +83,7 @@ class ProcessTest extends TestCase
 
     public function testProcessSkip()
     {
-        $process = new Process(10);
+        $process = new Process(1, 10);
         $process->initialize(100);
         $this->assertEquals(0, $process->getSkippedCount());
         $process->skip();
@@ -91,7 +92,7 @@ class ProcessTest extends TestCase
 
     public function testProcessAddError()
     {
-        $process = new Process(10);
+        $process = new Process(1, 10);
         $process->initialize(100);
         $this->assertEquals(0, $process->getFailedCount());
         $process->addError(new Error('Test error', 1));
@@ -102,7 +103,7 @@ class ProcessTest extends TestCase
     public function testProcessAddManyErrors()
     {
         $threshold = 20;
-        $process = new Process(10);
+        $process = new Process(1, 10);
         $process->initialize($threshold + 2);
         for ($i = 0; $i < $threshold + 2; $i++) {
             $process->addError(new Error('TestError', $i));
@@ -112,7 +113,7 @@ class ProcessTest extends TestCase
 
     public function testProcessTerminate()
     {
-        $process = new Process(10);
+        $process = new Process(1, 10);
         $process->initialize(100);
         $process->terminate(new Error('Test fatal error', 2));
         $this->assertEquals(Process::STATE_ENDED, $process->getState());
@@ -122,7 +123,7 @@ class ProcessTest extends TestCase
 
     public function testProcessTerminateWithNullInit()
     {
-        $process = new Process(10);
+        $process = new Process(1, 10);
         $process->initialize(null);
         $process->terminate(new Error('Test fatal error', 2));
         $this->assertEquals(1, $process->getFailedCount());
@@ -131,7 +132,7 @@ class ProcessTest extends TestCase
 
     public function testProcessTerminateWithoutInitialization()
     {
-        $process = new Process(10);
+        $process = new Process(1, 10);
         $process->terminate(new Error('Test fatal error', 2));
         $this->assertEquals(1, $process->getFailedCount());
         $this->assertCount(1,  $process->getLastErrors());
@@ -139,19 +140,19 @@ class ProcessTest extends TestCase
 
     public function testProcessFinish()
     {
-        $process = new Process(10);
+        $process = new Process(1, 10);
         $process->initialize(100);
         $process->finish(1);
         $this->assertEquals(1, $process->getResult());
         $this->assertEquals(Process::STATE_ENDED, $process->getState());
 
-        $process = new Process(10);
+        $process = new Process(1, 10);
         $process->initialize(100);
         $process->finish('Test');
         $this->assertEquals('Test', $process->getResult());
         $this->assertEquals(Process::STATE_ENDED, $process->getState());
 
-        $process = new Process(10);
+        $process = new Process(1, 10);
         $process->initialize(100);
         $process->finish(false);
         $this->assertEquals(false, $process->getResult());
@@ -161,7 +162,7 @@ class ProcessTest extends TestCase
     public function testProcessHandleAfterFinish()
     {
         $this->expectException(LogicException::class);
-        $process = new Process(10);
+        $process = new Process(1, 10);
         $process->initialize(100);
         $process->finish(true);
         $process->handle();
@@ -170,14 +171,14 @@ class ProcessTest extends TestCase
     public function testProcessFinishInvalidArgumentType()
     {
         $this->expectException(InvalidArgumentException::class);
-        $process = new Process(10);
+        $process = new Process(1, 10);
         $process->initialize(100);
         $process->finish(null);
     }
 
     public function testProcessJsonSerialize()
     {
-        $process = new Process(10, 'Description here');
+        $process = new Process(1, 10, 'Description here');
         $process->initialize(100);
         $process->addError(new Error( 'Test error'));
         $process->handle();
@@ -221,7 +222,7 @@ class ProcessTest extends TestCase
 
     public function testProcessJsonSerializeWithoutInitAndResult()
     {
-        $process = new Process(10);
+        $process = new Process(1, 10);
         $processInfoArray = $process->jsonSerialize();
         $this->assertArrayHasKey('initialized', $processInfoArray);
         $this->assertNull($processInfoArray['initialized']);

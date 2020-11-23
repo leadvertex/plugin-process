@@ -21,6 +21,8 @@ class Process implements ModelInterface, JsonSerializable
 
     use ModelTrait;
 
+    protected int $companyId;
+
     protected int $createdAt;
 
     protected string $state;
@@ -49,12 +51,18 @@ class Process implements ModelInterface, JsonSerializable
     const STATE_POST_PROCESSING = 'post_processing';
     const STATE_ENDED = 'ended';
 
-    public function __construct(string $id, string $description = null)
+    public function __construct(int $companyId, string $id, string $description = null)
     {
+        $this->companyId = $companyId;
         $this->id = $id;
         $this->createdAt = time();
         $this->setState(self::STATE_SCHEDULED);
         $this->description = $description;
+    }
+
+    public function getCompanyId(): int
+    {
+        return $this->companyId;
     }
 
     public function getCreatedAt(): int
@@ -275,6 +283,7 @@ class Process implements ModelInterface, JsonSerializable
     public static function schema(): array
     {
         return [
+            'companyId' => ['INT', 'NOT NULL'],
             'createdAt' => ['INT', 'NOT NULL'],
             'state' => ['VARCHAR(20)', 'NOT NULL'],
             'updatedAt' => ['INT'],
