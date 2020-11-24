@@ -10,6 +10,7 @@ namespace Leadvertex\Plugin\Components\Process;
 
 use InvalidArgumentException;
 use JsonSerializable;
+use Leadvertex\Plugin\Components\Db\Components\PluginReference;
 use Leadvertex\Plugin\Components\Db\ModelInterface;
 use Leadvertex\Plugin\Components\Db\ModelTrait;
 use Leadvertex\Plugin\Components\Process\Components\Error;
@@ -22,6 +23,8 @@ class Process implements ModelInterface, JsonSerializable
     use ModelTrait;
 
     protected int $companyId;
+
+    protected int $pluginId;
 
     protected int $createdAt;
 
@@ -51,9 +54,10 @@ class Process implements ModelInterface, JsonSerializable
     const STATE_POST_PROCESSING = 'post_processing';
     const STATE_ENDED = 'ended';
 
-    public function __construct(int $companyId, string $id, string $description = null)
+    public function __construct(PluginReference $reference, string $id, string $description = null)
     {
-        $this->companyId = $companyId;
+        $this->companyId = (int) $reference->getCompanyId();
+        $this->pluginId = (int) $reference->getId();
         $this->id = $id;
         $this->createdAt = time();
         $this->setState(self::STATE_SCHEDULED);
@@ -63,6 +67,11 @@ class Process implements ModelInterface, JsonSerializable
     public function getCompanyId(): int
     {
         return $this->companyId;
+    }
+
+    public function getPluginId(): int
+    {
+        return $this->pluginId;
     }
 
     public function getCreatedAt(): int
@@ -238,6 +247,8 @@ class Process implements ModelInterface, JsonSerializable
         }
 
         return [
+            'companyId' => $this->companyId,
+            'pluginId' => $this->pluginId,
             'description' => $this->description,
             'state' => [
                 'timestamp' => $this->updatedAt,
@@ -284,6 +295,7 @@ class Process implements ModelInterface, JsonSerializable
     {
         return [
             'companyId' => ['INT', 'NOT NULL'],
+            'pluginId' => ['INT', 'NOT NULL'],
             'createdAt' => ['INT', 'NOT NULL'],
             'state' => ['VARCHAR(20)', 'NOT NULL'],
             'updatedAt' => ['INT'],
