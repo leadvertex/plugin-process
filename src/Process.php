@@ -11,16 +11,13 @@ namespace Leadvertex\Plugin\Components\Process;
 use InvalidArgumentException;
 use JsonSerializable;
 use Leadvertex\Plugin\Components\Db\Components\PluginReference;
-use Leadvertex\Plugin\Components\Db\ModelInterface;
-use Leadvertex\Plugin\Components\Db\ModelTrait;
+use Leadvertex\Plugin\Components\Db\Model;
 use Leadvertex\Plugin\Components\Process\Components\Error;
 use LogicException;
 use RuntimeException;
 
-class Process implements ModelInterface, JsonSerializable
+class Process extends Model implements JsonSerializable
 {
-
-    use ModelTrait;
 
     protected int $companyId;
 
